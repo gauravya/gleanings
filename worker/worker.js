@@ -1,23 +1,24 @@
 // gleanings - API + scheduled emails (Cloudflare Worker)
 //
 // HTTP:
-//   POST /signup        { email, name? }
-//   POST /rsvp          { name, session, email? }
-//   GET  /events        -> sessions with live "going" counts
+//   POST /signup          { email, name? }
+//   POST /rsvp            { name, session, email? }   -> stores + sends a confirmation email
+//   GET|POST /rsvp/manage?token=...                    -> change / cancel an rsvp
+//   GET  /events          -> sessions with live "going" counts (cancelled excluded)
 //   GET|POST /unsubscribe?token=...
 //
-// Cron (scheduled): sends announcements (Events.Announce checked, not yet
-// Announced) and day-before reminders to RSVPs, tracked with the Announced /
-// Reminded checkboxes so nothing sends twice.
+// Cron: announcements (Events.Announce, not yet Announced) + day-before reminders
+// to a session's non-cancelled RSVPs, tracked with Announced / Reminded checkboxes.
 //
-// Vars (wrangler.toml): AIRTABLE_BASE_ID, FROM, PUBLIC_API_BASE
-// Secrets:              AIRTABLE_PAT, RESEND_API_KEY
+// Vars: AIRTABLE_BASE_ID, FROM, PUBLIC_API_BASE   Secrets: AIRTABLE_PAT, RESEND_API_KEY
 
 const TABLE_SUBSCRIBERS = "Subscribers";
 const TABLE_EVENTS = "Events";
 const TABLE_RSVPS = "RSVPs";
 
 const ALLOW_ORIGIN = "*";
+const EMAIL_RE = /^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$/;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function cors() {
   return {
@@ -31,6 +32,11 @@ function json(data, status = 200) {
 }
 function html(markup, status = 200) {
   return new Response(markup, { status, headers: { "Content-Type": "text/html; charset=utf-8", ...cors() } });
+}
+function shell(inner) {
+  return `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">` +
+    `<body style="font-family:Times New Roman,serif;text-align:center;padding:60px 16px;color:#1a1a1a">` +
+    `<h1 style="font-size:24px;color:#000080">gleanings</h1>${inner}</body>`;
 }
 
 // --- Airtable ---
@@ -74,24 +80,19 @@ async function resendSend(env, messages) {
     if (!res.ok) throw new Error("resend " + res.status + " " + (await res.text()));
   }
 }
-
 function announceMessages(env, ev, subs) {
   const f = ev.fields;
   const body =
     "many ahoys,\n\nwe have a new session up for gleanings.\n\n" +
-    (f.Title || "") + "\n" +
-    (f.Date || "") + (f.Pub ? ", " + f.Pub : "") + "\n" +
+    (f.Title || "") + "\n" + (f.Date || "") + (f.Pub ? ", " + f.Pub : "") + "\n" +
     (f.Reading ? "reading: " + f.Reading + "\n" : "") +
-    (f.Blurb ? "\n" + f.Blurb + "\n" : "") +
-    "\nhope to see you there.";
+    (f.Blurb ? "\n" + f.Blurb + "\n" : "") + "\nhope to see you there.";
   return subs
     .filter((s) => !s.fields.Unsubscribed && s.fields.Email)
     .map((s) => {
       const unsub = `${env.PUBLIC_API_BASE}/unsubscribe?token=${encodeURIComponent(s.fields.Token || "")}`;
       return {
-        from: env.FROM,
-        to: [s.fields.Email],
-        subject: "a new gleanings session",
+        from: env.FROM, to: [s.fields.Email], subject: "a new gleanings session",
         text: body + "\n\nto stop these emails: " + unsub,
         headers: { "List-Unsubscribe": "<" + unsub + ">", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
       };
@@ -102,19 +103,34 @@ function reminderMessages(env, ev, rsvps) {
   const body =
     "ahoy,\n\na reminder that gleanings is tomorrow.\n\n" +
     (f.Title || "") + "\n" + (f.Pub || "") + "\n" +
-    (f.Reading ? "the reading: " + f.Reading + "\n" : "") +
-    "\nsee you there.";
+    (f.Reading ? "the reading: " + f.Reading + "\n" : "") + "\nsee you there.";
   const emails = [...new Set(
-    rsvps.filter((r) => r.fields.Session === f.Date && r.fields.Email).map((r) => r.fields.Email)
+    rsvps.filter((r) => r.fields.Session === f.Date && r.fields.Email && !r.fields.Cancelled).map((r) => r.fields.Email)
   )];
   return emails.map((to) => ({ from: env.FROM, to: [to], subject: "gleanings is tomorrow", text: body }));
+}
+function rsvpConfirmMessage(env, ev, rsvp) {
+  const f = ev ? ev.fields : {};
+  const manage = `${env.PUBLIC_API_BASE}/rsvp/manage?token=${encodeURIComponent(rsvp.Token)}`;
+  const body =
+    "ahoy" + (rsvp.Name ? " " + rsvp.Name : "") + ",\n\n" +
+    "you're down for gleanings:\n\n" +
+    (f.Title || "the next session") + "\n" +
+    (rsvp.Session || "") + (f.Pub ? ", " + f.Pub : "") + "\n" +
+    (f.Reading ? "reading: " + f.Reading + "\n" : "") +
+    "\ncan't make it, or want to change your rsvp? " + manage + "\n\nsee you there.";
+  return { from: env.FROM, to: [rsvp.Email], subject: "you're coming to gleanings", text: body };
+}
+async function sendRsvpConfirm(env, session, rsvp) {
+  const evs = await listAll(env, TABLE_EVENTS, { maxRecords: "1", filterByFormula: `DATETIME_FORMAT({Date},'YYYY-MM-DD')='${session}'` });
+  await resendSend(env, [rsvpConfirmMessage(env, evs[0], rsvp)]);
 }
 function isoDate(d) {
   return d.getUTCFullYear() + "-" + String(d.getUTCMonth() + 1).padStart(2, "0") + "-" + String(d.getUTCDate()).padStart(2, "0");
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     if (request.method === "OPTIONS") return new Response(null, { headers: cors() });
 
@@ -123,7 +139,7 @@ export default {
       let body;
       try { body = await request.json(); } catch { return json({ error: "bad json" }, 400); }
       const email = (body.email || "").trim().toLowerCase();
-      if (!/^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$/.test(email)) return json({ error: "invalid email" }, 400);
+      if (!EMAIL_RE.test(email)) return json({ error: "invalid email" }, 400);
       const dupe = await at(env, `${encodeURIComponent(TABLE_SUBSCRIBERS)}?maxRecords=1&filterByFormula=${encodeURIComponent(`LOWER({Email})='${email}'`)}`);
       if (dupe.ok) {
         const dj = await dupe.json();
@@ -140,10 +156,56 @@ export default {
       try { body = await request.json(); } catch { return json({ error: "bad json" }, 400); }
       const name = (body.name || "").trim();
       const session = (body.session || "").trim();
+      const email = (body.email || "").trim().toLowerCase();
       if (!name || !session) return json({ error: "name and session required" }, 400);
-      const res = await create(env, TABLE_RSVPS, { Name: name, Email: (body.email || "").trim(), Session: session });
+      const emailOk = EMAIL_RE.test(email);
+      const dateOk = DATE_RE.test(session);
+
+      // dedup: same email + session -> re-confirm rather than duplicate
+      if (emailOk && dateOk) {
+        const ex = await at(env, `${encodeURIComponent(TABLE_RSVPS)}?maxRecords=1&filterByFormula=${encodeURIComponent(`AND(LOWER({Email})='${email}',{Session}='${session}')`)}`);
+        if (ex.ok) {
+          const ej = await ex.json();
+          const er = ej.records && ej.records[0];
+          if (er) {
+            const tok = er.fields.Token || crypto.randomUUID();
+            await patch(env, TABLE_RSVPS, er.id, { Cancelled: false, Name: name, Token: tok });
+            ctx.waitUntil(sendRsvpConfirm(env, session, { Name: name, Email: email, Session: session, Token: tok }));
+            return json({ ok: true, updated: true });
+          }
+        }
+      }
+
+      const token = crypto.randomUUID();
+      const res = await create(env, TABLE_RSVPS, { Name: name, Email: email, Session: session, Token: token });
       if (!res.ok) return json({ error: "store failed" }, 502);
+      if (emailOk && dateOk) {
+        ctx.waitUntil(sendRsvpConfirm(env, session, { Name: name, Email: email, Session: session, Token: token }));
+      }
       return json({ ok: true });
+    }
+
+    // ---- GET|POST /rsvp/manage ----
+    if (url.pathname === "/rsvp/manage" && (request.method === "GET" || request.method === "POST")) {
+      const token = url.searchParams.get("token");
+      if (!token) return html(shell("<p>that link is missing its token.</p>"), 400);
+      const found = await at(env, `${encodeURIComponent(TABLE_RSVPS)}?maxRecords=1&filterByFormula=${encodeURIComponent(`{Token}='${token}'`)}`);
+      if (!found.ok) return html(shell("<p>something went wrong. try again later.</p>"), 502);
+      const fj = await found.json();
+      const rec = fj.records && fj.records[0];
+      if (!rec) return html(shell("<p>we could not find that rsvp.</p>"));
+      if (request.method === "POST") {
+        const next = !rec.fields.Cancelled;
+        await patch(env, TABLE_RSVPS, rec.id, { Cancelled: next });
+        rec.fields.Cancelled = next;
+      }
+      const cancelled = !!rec.fields.Cancelled;
+      const session = rec.fields.Session || "the next session";
+      const status = cancelled
+        ? "<p>you are marked as <b>not coming</b>.</p>"
+        : `<p>you are <b>coming</b> to gleanings on ${session}.</p>`;
+      const btn = cancelled ? "actually, i can make it" : "i can no longer make it";
+      return html(shell(status + `<form method="POST"><button type="submit" style="font:14px 'Times New Roman',serif;padding:4px 12px;margin-top:8px;cursor:pointer">${btn}</button></form>`));
     }
 
     // ---- GET /events ----
@@ -154,27 +216,23 @@ export default {
       }));
       const rsvps = await listAll(env, TABLE_RSVPS);
       const counts = {};
-      rsvps.forEach((r) => { const s = r.fields.Session; if (s) counts[s] = (counts[s] || 0) + 1; });
+      rsvps.forEach((r) => { const s = r.fields.Session; if (s && !r.fields.Cancelled) counts[s] = (counts[s] || 0) + 1; });
       events.forEach((e) => { e.going = counts[e.date] || 0; });
       return json({ events });
     }
 
-    // ---- /unsubscribe ----
+    // ---- GET|POST /unsubscribe ----
     if (url.pathname === "/unsubscribe" && (request.method === "GET" || request.method === "POST")) {
       const token = url.searchParams.get("token");
-      const page = (msg) =>
-        `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">` +
-        `<body style="font-family:Times New Roman,serif;text-align:center;padding:60px 16px;color:#1a1a1a">` +
-        `<h1 style="font-size:24px;color:#000080">gleanings</h1><p>${msg}</p></body>`;
-      if (!token) return html(page("that link is missing its token."), 400);
+      if (!token) return html(shell("<p>that link is missing its token.</p>"), 400);
       const found = await at(env, `${encodeURIComponent(TABLE_SUBSCRIBERS)}?maxRecords=1&filterByFormula=${encodeURIComponent(`{Token}='${token}'`)}`);
-      if (!found.ok) return html(page("something went wrong. try again later."), 502);
+      if (!found.ok) return html(shell("<p>something went wrong. try again later.</p>"), 502);
       const fj = await found.json();
       const rec = fj.records && fj.records[0];
-      if (!rec) return html(page("you are already unsubscribed."));
+      if (!rec) return html(shell("<p>you are already unsubscribed.</p>"));
       const upd = await patch(env, TABLE_SUBSCRIBERS, rec.id, { Unsubscribed: true });
-      if (!upd.ok) return html(page("something went wrong. try again later."), 502);
-      return html(page("you have been unsubscribed. no more emails. ahoy."));
+      if (!upd.ok) return html(shell("<p>something went wrong. try again later.</p>"), 502);
+      return html(shell("<p>you have been unsubscribed. no more emails. ahoy.</p>"));
     }
 
     return json({ error: "not found" }, 404);
@@ -183,7 +241,6 @@ export default {
   async scheduled(controller, env, ctx) {
     const events = await listAll(env, TABLE_EVENTS);
 
-    // announcements: Announce ticked, not yet Announced
     const toAnnounce = events.filter((e) => e.fields.Announce && !e.fields.Announced);
     if (toAnnounce.length) {
       const subs = await listAll(env, TABLE_SUBSCRIBERS);
@@ -193,7 +250,6 @@ export default {
       }
     }
 
-    // reminders: once a day near 09:00 UTC, for sessions happening tomorrow
     const now = new Date();
     if (now.getUTCHours() === 9) {
       const tomorrow = isoDate(new Date(now.getTime() + 86400000));

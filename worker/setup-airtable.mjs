@@ -102,6 +102,8 @@ await createTable({
   await ensure("Subscribers", { name: "Unsubscribed", type: "checkbox", options: { icon: "check", color: "redBright" } });
   await ensure("Events", { name: "Announced", type: "checkbox", options: { icon: "check", color: "greenBright" } });
   await ensure("Events", { name: "Reminded", type: "checkbox", options: { icon: "check", color: "blueBright" } });
+  await ensure("RSVPs", { name: "Token", type: "singleLineText" });
+  await ensure("RSVPs", { name: "Cancelled", type: "checkbox", options: { icon: "check", color: "redBright" } });
 }
 
 console.log("done.");
