@@ -1,0 +1,16 @@
+name = "gleanings-api"
+main = "worker.js"
+compatibility_date = "2025-06-01"
+
+# Vars are not secret. PUBLIC_API_BASE is updated to the real Worker URL after
+# the first deploy. Secrets (AIRTABLE_PAT, RESEND_API_KEY) are set with:
+#   wrangler secret put AIRTABLE_PAT
+#   wrangler secret put RESEND_API_KEY
+[vars]
+AIRTABLE_BASE_ID = "appc57EzaW0CzWfi6"
+FROM = "gleanings <hello@gleanings.xyz>"
+PUBLIC_API_BASE = "https://gleanings-api.jgajg.workers.dev"
+
+# email cron: every 15 minutes (sends announcements quickly, reminders at ~09 UTC)
+[triggers]
+crons = ["*/15 * * * *"]

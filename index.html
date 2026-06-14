@@ -3,10 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>the wider we :: a reading club in cambridge</title>
+<title>gleanings :: a reading group in cambridge</title>
 <style>
   /* -- everything here is on purpose. it is 1995. -- */
   html, body { margin: 0; padding: 0; background: #ffffff; }
+  *, *::before, *::after { box-sizing: border-box; }
   body {
     color: #1a1a1a;
     font-family: "Times New Roman", Times, serif;
@@ -71,7 +72,7 @@
   }
 
   /* ---- the centred, framed artwork ---- */
-  .art { margin: 22px auto 4px; width: 320px; }
+  .art { margin: 22px auto 4px; width: 320px; max-width: 100%; }
   .art .matte {
     border: 7px solid #111;
     background: #efe7c8;
@@ -121,15 +122,33 @@
     border: 2px outset #555;
   }
 
+  #signup { margin: 8px 0 2px; }
+  #signup input {
+    font-family: inherit; font-size: 13px; padding: 3px 5px;
+    border: 1px solid #777; max-width: 60%;
+  }
+  #signup button {
+    font-family: inherit; font-size: 13px; padding: 3px 9px; margin-left: 4px;
+  }
+  .signup-msg { font-size: 11px; color: #555; min-height: 14px; margin: 2px 0; }
+
+  .session { margin: 12px auto; }
+  .cat { font-size: 12px; color: #555; }
+  .rsvp { margin-top: 6px; font-size: 12px; }
+  .rsvp-open { font-family: inherit; font-size: 12px; padding: 2px 12px; cursor: pointer; }
+  .rsvp-form { margin-top: 4px; }
+  .rsvp-form input { font-family: inherit; font-size: 12px; padding: 2px 5px; border: 1px solid #777; margin: 2px 4px 2px 0; }
+  .rsvp-form button { font-family: inherit; font-size: 12px; padding: 2px 8px; }
+  .going { display: block; color: #555; font-size: 11px; margin-bottom: 3px; }
+
   .footer { color: #5a4d10; font-size: 11px; margin-top: 26px; }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <h1>the wider we</h1>
+  <h1>gleanings</h1>
   <p class="est">est. 2026 &middot; cambridgeshire</p>
-  <p class="tagline">a reading club in cambridge. we read, then we go to the pub.</p>
 
   <!-- the simple centred artwork. drop a painting in by replacing the .slot div
        with:  <img src="art.jpg" alt="...">   and fill in the plate caption. -->
@@ -141,60 +160,175 @@
   </div>
 
   <nav>
-    [ <a href="#idea">the idea</a> ] &nbsp; [ <a href="#how">how it works</a> ] &nbsp; [ <a href="#reading">the reading</a> ] &nbsp; [ <a href="#join">join</a> ]
+    [ <a href="#idea">the idea</a> ] &nbsp; [ <a href="#sessions">sessions</a> ] &nbsp; [ <a href="#join">join</a> ]
   </nav>
 
   <p>
-    jason and i have been scheming. the idea is simple: read an essay
-    beforehand, gather at a pub over some fine beverages, and talk about it.
-    that is the whole thing. we are very open to the plentiful variations this
-    format invites.
+    we meet at the free press every fortnight to discuss a reading, which you
+    can find below. please read it beforehand if you can. each session is led by
+    one of us, and we may change the format from time to time.
   </p>
 
   <hr>
 
   <h2 id="idea">{ the idea }</h2>
   <p>
-    <span class="placeholder">[ over to you, gaurav: one warm paragraph in your own voice. ]</span>
+    a reading group about some of the philosophical underpinnings of effective
+    altruism and rationalism, and the virtues and habits that started the
+    movement. we hope to use this space to explore ideas, what they mean for us
+    and how we act in the world. it is open to everybody.
   </p>
 
-  <h2 id="how">{ how it works }</h2>
-  <ul>
-    <li>read the essay beforehand (a light skim is not a crime)</li>
-    <li>meet at the pub, roughly once a month</li>
-    <li>one of us loosely leads, then everyone piles in</li>
-    <li>charity and steelmanning are stops on the way to truth</li>
-    <li>fine beverages are, broadly, the point</li>
-  </ul>
-
-  <h2 id="reading">{ the reading }</h2>
-  <p>
-    we are working through the essays of Joe Carlsmith, starting on the
-    <a href="https://joecarlsmith.com/category/crazy-train/" target="_blank" rel="noopener">crazy train</a>.
-  </p>
-  <ul>
-    <li>first session reading: <span class="placeholder">[ TBD - pick one essay ]</span></li>
-    <li>the full back catalogue: <a href="https://joecarlsmith.com" target="_blank" rel="noopener">joecarlsmith.com</a></li>
-  </ul>
-
+  <h2 id="sessions">{ sessions }</h2>
+  <div id="sessions-list">
+    <div class="session" data-session="2026-06-25">
+      <b>thursday 25 june, 7pm</b> &middot; the free press<br>
+      <a href="https://joecarlsmith.com/2021/08/27/can-you-control-the-past/" target="_blank" rel="noopener">can you control the past?</a> by Joe Carlsmith
+      <div class="rsvp">
+        <span class="going"></span>
+        <button class="rsvp-open" type="button">rsvp</button>
+        <form class="rsvp-form" hidden>
+          <input class="rsvp-name" type="text" placeholder="your name" required>
+          <input class="rsvp-email" type="email" placeholder="your email" required>
+          <button type="submit">i'll be there</button>
+        </form>
+      </div>
+    </div>
+  </div>
   <h2 id="join">{ join }</h2>
-  <p>
-    next session: <span class="placeholder">[ date TBD ]</span> at
-    <span class="placeholder">[ a pub in cambridgeshire ]</span>.
-  </p>
-  <p>
-    to come along: react with <b>:joe:</b> in the slack, or drop a line to
-    <a href="mailto:you@example.com">you@example.com</a>.
-    <span class="blink">new!</span>
-  </p>
+  <p>to come along, leave your email and we will keep you posted:</p>
+  <form id="signup">
+    <input id="signup-email" type="email" placeholder="your email" required>
+    <button type="submit">keep me posted</button>
+  </form>
+  <p id="signup-msg" class="signup-msg"></p>
 
   <hr>
 
   <div class="footer">
-    <p>you are visitor no. <span class="counter">0000137</span></p>
+    <p>you are visitor no. <span class="counter" id="hits">0000137</span></p>
     <p>last updated 14 june 2026</p>
   </div>
 
 </div>
+
+<script>
+  // ONE place to set after deploy: paste your Worker URL here.
+  window.GLEANINGS_API = "https://gleanings-api.jgajg.workers.dev";
+</script>
+
+<script>
+  // real, ticking visitor counter (free, no signup). falls back to the
+  // static number if the service is unreachable, so the page never looks broken.
+  (function () {
+    var el = document.getElementById('hits');
+    if (!el) return;
+    fetch('https://abacus.jasoncameron.dev/hit/the-wider-we/visits')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var n = (d && (d.value != null ? d.value : d.count));
+        if (n != null) el.textContent = String(n).padStart(7, '0');
+      })
+      .catch(function () { /* keep the placeholder */ });
+  })();
+</script>
+
+<script>
+  // signup -> cloudflare worker -> airtable.  set WORKER_URL after you deploy.
+  (function () {
+    var WORKER_URL = window.GLEANINGS_API;
+    var form = document.getElementById('signup');
+    var msg = document.getElementById('signup-msg');
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var email = (document.getElementById('signup-email').value || '').trim();
+      if (!email) return;
+      msg.textContent = 'one moment...';
+      fetch(WORKER_URL + '/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      }).then(function (r) {
+        if (r.ok) { msg.textContent = 'you are on the list. ahoy.'; form.reset(); }
+        else { msg.textContent = 'hmm, that did not work. try again later.'; }
+      }).catch(function () { msg.textContent = 'hmm, that did not work. try again later.'; });
+    });
+  })();
+</script>
+
+<script>
+  // sessions list, pulled live from the worker -> airtable on each page load.
+  (function () {
+    var WORKER_URL = window.GLEANINGS_API;
+    var box = document.getElementById('sessions-list');
+    if (!box || WORKER_URL.indexOf('YOUR-SUBDOMAIN') !== -1) return; // not deployed yet
+    fetch(WORKER_URL + '/events')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.events || !d.events.length) return;
+        var days = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+        var months = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+        box.innerHTML = d.events.map(function (e) {
+          var when = '';
+          if (e.date) {
+            var dt = new Date(e.date + 'T00:00:00');
+            when = days[dt.getDay()] + ' ' + dt.getDate() + ' ' + months[dt.getMonth()];
+          }
+          var s = '<div class="session" data-session="' + (e.date || '') + '">';
+          s += '<b>' + when + '</b>' + (e.pub ? ' &middot; ' + e.pub : '');
+          if (e.reading) s += '<br><a href="' + e.reading + '" target="_blank" rel="noopener">' + (e.title || 'the reading') + '</a>';
+          else if (e.title) s += '<br>' + e.title;
+          s += '<div class="rsvp"><span class="going">' + (e.going ? e.going + ' going' : '') + '</span>';
+          s += '<button class="rsvp-open" type="button">rsvp</button>';
+          s += '<form class="rsvp-form" hidden><input class="rsvp-name" type="text" placeholder="your name" required>';
+          s += '<input class="rsvp-email" type="email" placeholder="your email" required>';
+          s += '<button type="submit">i\'ll be there</button></form></div>';
+          return s + '</div>';
+        }).join('');
+      })
+      .catch(function () { /* keep the static fallback */ });
+  })();
+</script>
+
+<script>
+  // rsvp -> worker -> airtable (delegated, works for static + live sessions)
+  (function () {
+    var WORKER_URL = window.GLEANINGS_API;
+    var list = document.getElementById('sessions-list');
+    if (!list) return;
+
+    // open the form when the rsvp button is pressed
+    list.addEventListener('click', function (e) {
+      var btn = e.target;
+      if (!btn.classList || !btn.classList.contains('rsvp-open')) return;
+      var box = btn.closest('.rsvp');
+      if (!box) return;
+      btn.style.display = 'none';
+      var form = box.querySelector('.rsvp-form');
+      if (form) { form.hidden = false; var n = form.querySelector('.rsvp-name'); if (n) n.focus(); }
+    });
+
+    list.addEventListener('submit', function (e) {
+      var form = e.target;
+      if (!form.matches || !form.matches('.rsvp-form')) return;
+      e.preventDefault();
+      var card = form.closest('.session');
+      var session = card ? card.getAttribute('data-session') : '';
+      var name = (form.querySelector('.rsvp-name').value || '').trim();
+      var emailEl = form.querySelector('.rsvp-email');
+      var email = emailEl ? (emailEl.value || '').trim() : '';
+      var box = card && card.querySelector('.rsvp');
+      if (!name || !session) return;
+      if (box) box.innerHTML = 'one moment...';
+      fetch(WORKER_URL + '/rsvp', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, email: email, session: session })
+      }).then(function (r) {
+        if (box) box.innerHTML = r.ok ? ('see you there, ' + name + '.') : 'hmm, that did not work. try again later.';
+      }).catch(function () { if (box) box.innerHTML = 'hmm, that did not work. try again later.'; });
+    });
+  })();
+</script>
 </body>
 </html>
