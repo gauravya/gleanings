@@ -223,7 +223,7 @@
   (function () {
     var el = document.getElementById('hits');
     if (!el) return;
-    fetch('https://abacus.jasoncameron.dev/hit/the-wider-we/visits')
+    fetch('https://abacus.jasoncameron.dev/hit/gleanings/visits')
       .then(function (r) { return r.json(); })
       .then(function (d) {
         var n = (d && (d.value != null ? d.value : d.count));
@@ -273,7 +273,7 @@
           var when = '';
           if (e.date) {
             var dt = new Date(e.date + 'T00:00:00');
-            when = days[dt.getDay()] + ' ' + dt.getDate() + ' ' + months[dt.getMonth()];
+            when = days[dt.getDay()] + ' ' + dt.getDate() + ' ' + months[dt.getMonth()] + (e.time ? ', ' + e.time : '');
           }
           var s = '<div class="session" data-session="' + (e.date || '') + '">';
           s += '<b>' + when + '</b>' + (e.pub ? ' &middot; ' + e.pub : '');
