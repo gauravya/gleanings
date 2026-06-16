@@ -250,7 +250,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email })
       }).then(function (r) {
-        if (r.ok) { msg.textContent = 'you are on the list. ahoy.'; form.reset(); }
+        if (r.ok) { msg.textContent = 'ahoy! you are on the list.'; form.reset(); }
         else { msg.textContent = 'hmm, that did not work. try again later.'; }
       }).catch(function () { msg.textContent = 'hmm, that did not work. try again later.'; });
     });
