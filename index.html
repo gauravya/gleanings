@@ -196,7 +196,7 @@
     </div>
   </div>
   <h2 id="join">{ join }</h2>
-  <p>to come along, leave your email and we will keep you posted:</p>
+  <p>leave your email and we will notify you when new sessions go live:</p>
   <form id="signup">
     <input id="signup-email" type="email" placeholder="your email" required>
     <button type="submit">keep me posted</button>
@@ -207,7 +207,7 @@
 
   <div class="footer">
     <p>you are visitor no. <span class="counter" id="hits">0000137</span></p>
-    <p>last updated 14 june 2026</p>
+    <p>last updated <span id="updated">14 june 2026</span></p>
   </div>
 
 </div>
@@ -230,6 +230,24 @@
         if (n != null) el.textContent = String(n).padStart(7, '0');
       })
       .catch(function () { /* keep the placeholder */ });
+  })();
+</script>
+
+<script>
+  // last-updated, pulled from the repo's latest commit so it is never stale
+  (function () {
+    var el = document.getElementById('updated');
+    if (!el) return;
+    fetch('https://api.github.com/repos/gauravya/gleanings/commits?per_page=1')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var iso = d && d[0] && d[0].commit && d[0].commit.committer && d[0].commit.committer.date;
+        if (!iso) return;
+        var dt = new Date(iso);
+        var months = ['january','february','march','april','may','june','july','august','september','october','november','december'];
+        el.textContent = dt.getDate() + ' ' + months[dt.getMonth()] + ' ' + dt.getFullYear();
+      })
+      .catch(function () { /* keep the fallback date */ });
   })();
 </script>
 
