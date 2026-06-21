@@ -243,6 +243,33 @@ export default {
       return html(shell("<p>you have been unsubscribed. no more emails. ahoy.</p>"));
     }
 
+    // ---- POST /notify (admin: message a session's rsvps; needs x-notify-secret) ----
+    if (request.method === "POST" && url.pathname === "/notify") {
+      if (!env.NOTIFY_SECRET || request.headers.get("x-notify-secret") !== env.NOTIFY_SECRET) {
+        return json({ error: "forbidden" }, 403);
+      }
+      let body;
+      try { body = await request.json(); } catch { return json({ error: "bad json" }, 400); }
+      const session = (body.session || "").trim();
+      const subject = (body.subject || "gleanings update").trim();
+      const message = (body.message || "").trim();
+      if (!DATE_RE.test(session) || !message) return json({ error: "valid session and message required" }, 400);
+      const rsvps = await listAll(env, TABLE_RSVPS);
+      const seen = new Set();
+      const msgs = [];
+      for (const r of rsvps) {
+        if (r.fields.Session !== session || !r.fields.Email || r.fields.Cancelled) continue;
+        if (seen.has(r.fields.Email)) continue;
+        seen.add(r.fields.Email);
+        const manage = UUID_RE.test(r.fields.Token || "")
+          ? `\n\nyour rsvp: ${env.PUBLIC_API_BASE}/rsvp/manage?token=${encodeURIComponent(r.fields.Token)}`
+          : "";
+        msgs.push({ from: env.FROM, to: [r.fields.Email], subject, text: message + manage });
+      }
+      await resendSend(env, msgs);
+      return json({ sent: msgs.length });
+    }
+
     return json({ error: "not found" }, 404);
   },
 
